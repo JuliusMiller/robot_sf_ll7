@@ -7,6 +7,8 @@ of environments while hiding the complexity of configuration and setup.
 
 from typing import Callable, Optional
 
+import loguru
+
 from robot_sf.gym_env.abstract_envs import MultiAgentEnv, SingleAgentEnv
 from robot_sf.gym_env.unified_config import (
     ImageRobotConfig,
@@ -14,6 +16,8 @@ from robot_sf.gym_env.unified_config import (
     PedestrianSimulationConfig,
     RobotSimulationConfig,
 )
+
+logger = loguru.logger
 
 
 class EnvironmentFactory:
@@ -115,15 +119,16 @@ class EnvironmentFactory:
         Returns:
             Configured pedestrian environment.
         """
+
         if config is None:
             config = PedestrianSimulationConfig()
 
         config.peds_have_obstacle_forces = peds_have_obstacle_forces
 
-        from robot_sf.gym_env.pedestrian_env import PedestrianEnv
+        from robot_sf.gym_env.pedestrian_env_refactored import RefactoredPedestrianEnv
 
-        return PedestrianEnv(
-            env_config=config,
+        return RefactoredPedestrianEnv(
+            config=config,
             robot_model=robot_model,
             reward_func=reward_func,
             debug=debug,
