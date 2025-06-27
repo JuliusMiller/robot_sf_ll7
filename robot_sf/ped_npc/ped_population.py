@@ -325,11 +325,13 @@ def populate_crowded_zones(
     return ped_states, groups, zone_assignments
 
 
+# TODO: Check if ego state is present otherwise use normal calculation
 def populate_simulation(
     tau: float,
     spawn_config: PedSpawnConfig,
     ped_routes: List[GlobalRoute],
     ped_crowded_zones: List[Zone],
+    ego_state,  # TODO:  Further testing and adjusting what ego state has to be
 ) -> Tuple[PedestrianStates, PedestrianGroupings, List[PedestrianBehavior]]:
     crowd_ped_states_np, crowd_groups, zone_assignments = populate_crowded_zones(
         spawn_config, ped_crowded_zones
@@ -344,13 +346,16 @@ def populate_simulation(
     id_offset = crowd_ped_states_np.shape[0]
     combined_groups = crowd_groups + [{id + id_offset for id in peds} for peds in route_groups]
 
-    pysf_state = PedestrianStates(lambda: ped_states)
-    crowd_pysf_state = PedestrianStates(lambda: ped_states[:id_offset])
-    route_pysf_state = PedestrianStates(lambda: ped_states[id_offset:])
+    new_ped_states = np.concatenate((ped_states, ego_state()), axis=0)
+    # pysf_state = PedestrianStates(lambda: ped_states) # TODO: Check whats up with that
+    pysf_state = PedestrianStates(lambda: new_ped_states)
+    crowd_pysf_state = PedestrianStates(lambda: new_ped_states[:id_offset])
+    route_pysf_state = PedestrianStates(lambda: new_ped_states[id_offset:-1])
 
     groups = PedestrianGroupings(pysf_state)
     for ped_ids in combined_groups:
         groups.new_group(ped_ids)
+
     crowd_groupings = PedestrianGroupings(crowd_pysf_state)
     for ped_ids in crowd_groups:
         crowd_groupings.new_group(ped_ids)

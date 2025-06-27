@@ -3,6 +3,7 @@ from math import ceil, cos, pi, sin
 from random import sample, uniform
 from typing import List, Tuple, Union
 
+import numpy as np
 from loguru import logger
 from pysocialforce import Simulator as PySFSimulator
 from pysocialforce.config import SimulatorConfig as PySFSimConfig
@@ -257,6 +258,79 @@ class PedSimulator(Simulator):
 
     ego_ped: UnicycleDrivePedestrian
 
+    def __post_init__(self):
+        def ego_state():
+            """Dummy Values for Init"""
+            return np.array(
+                [
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0.5,
+                ]
+            ).reshape(1, -1)
+
+        pysf_config = PySFSimConfig()
+        spawn_config = PedSpawnConfig(self.config.peds_per_area_m2, self.config.max_peds_per_group)
+        self.pysf_state, groups, self.peds_behaviors = populate_simulation(
+            pysf_config.scene_config.tau,
+            spawn_config,
+            self.map_def.ped_routes,
+            self.map_def.ped_crowded_zones,
+            ego_state,
+        )
+        # TODO: Move to populate_sim
+        groups.new_group({self.pysf_state.num_peds - 1})  # Add ego_ped to groups
+        self.groups = groups
+
+        # TODO: REFActor
+        def make_forces(sim: PySFSimulator, config: PySFSimConfig) -> List[PySFForce]:
+            """
+            Creates and configures the forces to be applied in the simulation,
+            excluding obstacle forces and adding pedestrian-robot interaction forces
+            if PRF is active.
+            """
+            forces = pysf_make_forces(sim, config)
+
+            if self.peds_have_obstacle_forces is False:
+                logger.info("Peds have no obstacle forces.")
+                # if peds have no obstacle forces, we filter the obstacle forces and remove them
+                forces = [f for f in forces if not isinstance(f, ObstacleForce)]
+            if self.config.prf_config.is_active:
+                for robot in self.robots:
+                    self.config.prf_config.robot_radius = robot.config.radius
+                    forces.append(
+                        PedRobotForce(self.config.prf_config, sim.peds, lambda: robot.pos)
+                    )
+            return forces
+
+        self.pysf_sim = PySFSimulator(
+            self.pysf_state.pysf_states(),
+            self.groups.groups_as_lists,
+            self.map_def.obstacles_pysf,
+            config=pysf_config,
+            make_forces=make_forces,
+        )
+        self.pysf_sim.peds.max_speed_multiplier = self.config.peds_speed_mult
+
+        self.robot_navs = [
+            RouteNavigator(proximity_threshold=self.goal_proximity_threshold) for _ in self.robots
+        ]
+
+        self.reset_state()
+        for behavior in self.peds_behaviors:
+            behavior.reset()
+
+    @property
+    def ped_pos(self):
+        """
+        Returns the current positions of all pedestrians.
+        """
+        return self.pysf_state.ped_positions[:-1]  # Exclude the ego pedestrian
+
     @property
     def ego_ped_pos(self) -> Vec2D:
         return self.ego_ped.pos
@@ -293,6 +367,9 @@ class PedSimulator(Simulator):
             nav.update_position(robot.pos)
 
         self.ego_ped.apply_action(ego_ped_actions[0], self.config.time_per_step_in_secs)
+        # Update ego state in pysf states
+        self.pysf_state.pysf_states()[-1, 0:2] = self.ego_ped.pos
+        self.pysf_state.pysf_states()[-1, 2:4] = self.ego_ped.current_speed
 
     def get_proximity_point(
         self, fixed_point: Tuple[float, float], lower_bound: float, upper_bound: float
