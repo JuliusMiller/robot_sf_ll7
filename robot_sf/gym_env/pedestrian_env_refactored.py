@@ -48,6 +48,7 @@ class RefactoredPedestrianEnv(SingleAgentEnv):
         debug: bool = False,
         recording_enabled: bool = False,
         peds_have_obstacle_forces: bool = False,
+        debug_without_robot_movement: bool = False,
         **kwargs,
     ):
         """
@@ -68,6 +69,7 @@ class RefactoredPedestrianEnv(SingleAgentEnv):
         if robot_model is None:
             raise ValueError("Robot model is required for pedestrian environment!")
         self.robot_model = robot_model
+        self.debug_without_robot_movement = debug_without_robot_movement
 
         # Store reward function
         if reward_func is None:
@@ -164,6 +166,8 @@ class RefactoredPedestrianEnv(SingleAgentEnv):
         # Get robot action from model
         action_robot, _ = self.robot_model.predict(self.last_obs_robot, deterministic=True)
         action_robot = self.simulator.robots[0].parse_action(action_robot)
+        if self.debug_without_robot_movement:
+            action_robot = (0.0, 0.0)
         self.last_action_robot = action_robot
 
         # Execute simulation step

@@ -1,11 +1,12 @@
+import time
 from typing import List
 
 import numpy as np
 import pytest
 from stable_baselines3 import PPO
 
-from robot_sf.gym_env.pedestrian_env import PedestrianEnv
-from robot_sf.gym_env.unified_config import PedEnvSettings
+from robot_sf.gym_env.environment_factory import make_pedestrian_env
+from robot_sf.gym_env.unified_config import PedestrianSimulationConfig
 from robot_sf.nav.global_route import GlobalRoute
 from robot_sf.nav.map_config import MapDefinition, MapDefinitionPool
 from robot_sf.nav.nav_types import SvgRectangle
@@ -75,7 +76,7 @@ def dummy_map():
 
 @pytest.fixture
 def env(dummy_map):
-    env_config = PedEnvSettings(
+    config = PedestrianSimulationConfig(
         map_pool=MapDefinitionPool(map_defs={"test": dummy_map}),
         sim_config=SimulationSettings(),
         robot_config=BicycleDriveSettings(radius=0.5, max_accel=3.0, allow_backwards=True),
@@ -84,13 +85,13 @@ def env(dummy_map):
     robot_model = "./model/run_043"
 
     robot_model = PPO.load(robot_model, env=None)
-
-    env = PedestrianEnv(
-        env_config,
+    env = make_pedestrian_env(
+        config=config,
         robot_model=robot_model,
         debug=True,
         recording_enabled=False,
         peds_have_obstacle_forces=False,
+        debug_without_robot_movement=True,
     )
     return env
 
@@ -101,19 +102,54 @@ def test_npc_pedestrian_avoids_ego_pedestrian_social_force(env):
     """
     obs, _ = env.reset()
 
-    # Place ego at (10, 5), which is along the NPC's route from (7, 5) to (34, 5)
+    # Case 1: Ego in the way of NPC
+    # Place ego at (12, 5), which is along the NPC's route from (7, 5) to (34, 5)
     env.simulator.ego_ped.state.pose = ((12.0, 5.0), 0)
+    social_forces = []
     for i in range(200):
         action = np.array([0, 0])  # No action for the ego pedestrian
         obs, _, done, _, _ = env.step(action)
+        # Get the social force for the NPC (index 0)
+        sf = env.simulator.pysf_sim.forces[1]()  # index 1 is social force
+        social_forces.append(sf[0].copy())
         # env.render()
-        # time.sleep(0.1)
+        # time.sleep(0.05)
 
         if done:
-            meta = env.ped_state.meta_dict()
-            is_collision = meta.get("is_pedestrian_collision", False)
-            assert not is_collision, "NPC collided with the ego pedestrian"
-            obs, _ = env.reset()
+            break
+
+    # Check that the social force changes at some point
+    diffs = [
+        np.linalg.norm(social_forces[i + 1] - social_forces[i])
+        for i in range(len(social_forces) - 1)
+    ]
+    assert any(d > 1e-6 for d in diffs), "Social force on NPC did not change during the episode"
+
+    obs, _ = env.reset()
+    # Case 2: Ego not in the way of NPC
+    # Place ego at (30, 30), which is not along the NPC's route from (7, 5) to (34, 5)
+    env.simulator.ego_ped.state.pose = ((30.0, 30.0), 0)
+    social_forces = []
+    for i in range(200):
+        action = np.array([0, 0])  # No action for the ego pedestrian
+        obs, _, done, _, _ = env.step(action)
+        # Get the social force for the NPC (index 0)
+        sf = env.simulator.pysf_sim.forces[1]()  # index 1 is social force
+        social_forces.append(sf[0].copy())
+        env.render()
+        time.sleep(0.05)
+
+        if done:
+            break
+
+    # Check that the social force doesn't change at some point
+    diffs = [
+        np.linalg.norm(social_forces[i + 1] - social_forces[i])
+        for i in range(len(social_forces) - 1)
+    ]
+    assert not any(d > 1e-6 for d in diffs), (
+        "Social force on NPC changed during the episode without ego ped"
+    )
 
     env.exit()
 
@@ -124,8 +160,25 @@ def test_ego_position_correct_in_states(env):
     """
     obs, _ = env.reset()
 
-    # Place ego at (10, 5), which is along the NPC's route from (7, 5) to (34, 5)
-    for i in range(20):
+    for i in range(5):
+        action = np.array([0, 0])  # No action for the ego pedestrian
+        obs, _, done, _, _ = env.step(action)
+
+        assert np.allclose(
+            env.simulator.pysf_state.pysf_states()[-1, 0:2], env.simulator.ego_ped_pos
+        ), "Ego pedestrian position does not match the simulator state"
+
+    env.simulator.ego_ped.state.pose = ((12.0, 5.0), 0)
+    for i in range(5):
+        action = np.array([0, 0])  # No action for the ego pedestrian
+        obs, _, done, _, _ = env.step(action)
+
+        assert np.allclose(
+            env.simulator.pysf_state.pysf_states()[-1, 0:2], env.simulator.ego_ped_pos
+        ), "Ego pedestrian position does not match the simulator state"
+
+    env.simulator.ego_ped.state.pose = ((20.0, 7.0), 0)
+    for i in range(5):
         action = np.array([0, 0])  # No action for the ego pedestrian
         obs, _, done, _, _ = env.step(action)
 
@@ -134,3 +187,7 @@ def test_ego_position_correct_in_states(env):
         ), "Ego pedestrian position does not match the simulator state"
 
     env.exit()
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])

@@ -102,6 +102,7 @@ class EnvironmentFactory:
         debug: bool = False,
         recording_enabled: bool = False,
         peds_have_obstacle_forces: bool = False,
+        debug_without_robot_movement: bool = False,
         **kwargs,
     ) -> SingleAgentEnv:
         """
@@ -134,6 +135,7 @@ class EnvironmentFactory:
             debug=debug,
             recording_enabled=recording_enabled,
             peds_have_obstacle_forces=peds_have_obstacle_forces,
+            debug_without_robot_movement=debug_without_robot_movement,
             **kwargs,
         )
 

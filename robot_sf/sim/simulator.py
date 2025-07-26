@@ -3,7 +3,6 @@ from math import ceil, cos, pi, sin
 from random import sample, uniform
 from typing import List, Tuple, Union
 
-import numpy as np
 from loguru import logger
 from pysocialforce import Simulator as PySFSimulator
 from pysocialforce.config import SimulatorConfig as PySFSimConfig
@@ -259,34 +258,17 @@ class PedSimulator(Simulator):
     ego_ped: UnicycleDrivePedestrian
 
     def __post_init__(self):
-        def ego_state():
-            """Dummy Values for Init"""
-            return np.array(
-                [
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0.5,
-                ]
-            ).reshape(1, -1)
-
         pysf_config = PySFSimConfig()
         spawn_config = PedSpawnConfig(self.config.peds_per_area_m2, self.config.max_peds_per_group)
-        self.pysf_state, groups, self.peds_behaviors = populate_simulation(
+        self.pysf_state, self.groups, self.peds_behaviors = populate_simulation(
             pysf_config.scene_config.tau,
             spawn_config,
             self.map_def.ped_routes,
             self.map_def.ped_crowded_zones,
-            ego_state,
+            add_ego_state=True,
         )
-        # TODO: Move to populate_sim
-        groups.new_group({self.pysf_state.num_peds - 1})  # Add ego_ped to groups
-        self.groups = groups
 
-        # TODO: REFActor
+        # TODO: Duplicated code, can be refactored
         def make_forces(sim: PySFSimulator, config: PySFSimConfig) -> List[PySFForce]:
             """
             Creates and configures the forces to be applied in the simulation,
