@@ -256,6 +256,7 @@ class PedSimulator(Simulator):
     """
 
     ego_ped: UnicycleDrivePedestrian
+    spawn_near_robot: bool = True
 
     def __post_init__(self):
         pysf_config = PySFSimConfig()
@@ -334,8 +335,12 @@ class PedSimulator(Simulator):
                 nav.new_route(waypoints[1:])
                 robot.reset_state((waypoints[0], nav.initial_orientation))
         # Ego_pedestrian reset
-        robot_spawn = self.robot_pos[0]
-        ped_spawn = self.get_proximity_point(robot_spawn, 10, 15)
+        if self.spawn_near_robot:
+            robot_spawn = self.robot_pos[0]
+            ped_spawn = self.get_proximity_point(robot_spawn, 10, 15)
+        else:
+            ped_spawn_zone = sample(self.map_def.ped_spawn_zones, k=1)[0]
+            ped_spawn = sample_zone(ped_spawn_zone, 1)[0]
         self.ego_ped.reset_state((ped_spawn, self.ego_ped.pose[1]))
 
     def step_once(self, actions: List[RobotAction], ego_ped_actions: List[UnicycleAction]):
@@ -434,6 +439,7 @@ def init_ped_simulators(
         random_start_pos,
         ego_ped=sim_ped,
         peds_have_obstacle_forces=peds_have_obstacle_forces,
+        spawn_near_robot=env_config.spawn_near_robot,
     )
 
     return [sim]
