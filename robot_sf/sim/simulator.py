@@ -338,10 +338,14 @@ class PedSimulator(Simulator):
         if self.spawn_near_robot:
             robot_spawn = self.robot_pos[0]
             ped_spawn = self.get_proximity_point(robot_spawn, 10, 15)
+            self.ego_ped.reset_state((ped_spawn, self.ego_ped.pose[1]))
         else:
             ped_spawn_zone = sample(self.map_def.ped_spawn_zones, k=1)[0]
             ped_spawn = sample_zone(ped_spawn_zone, 1)[0]
-        self.ego_ped.reset_state((ped_spawn, self.ego_ped.pose[1]))
+            npc_orient = self.pysf_state.pysf_states()[
+                0, 6
+            ]  # Have the same orientation as the first NPC
+            self.ego_ped.reset_state((ped_spawn, npc_orient))
 
     def step_once(self, actions: List[RobotAction], ego_ped_actions: List[UnicycleAction]):
         for behavior in self.peds_behaviors:

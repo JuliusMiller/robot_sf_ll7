@@ -205,6 +205,9 @@ class RefactoredPedestrianEnv(SingleAgentEnv):
         self.last_action_robot = None
         self.last_action_ped = None
 
+        if self.recording_enabled:
+            self.save_recording()
+
         return obs_ped, {}
 
     def render(self, **kwargs):
