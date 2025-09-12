@@ -3,9 +3,10 @@ from pathlib import Path
 
 import loguru
 from stable_baselines3 import PPO
+from stable_baselines3.common.policies import ActorCriticPolicy
 
-from robot_sf.gym_env.env_config import PedEnvSettings
-from robot_sf.gym_env.pedestrian_env import PedestrianEnv
+from robot_sf.gym_env.environment_factory import make_pedestrian_env
+from robot_sf.gym_env.unified_config import PedestrianSimulationConfig
 from robot_sf.nav.map_config import MapDefinitionPool
 from robot_sf.nav.svg_map_parser import convert_map
 from robot_sf.robot.bicycle_drive import BicycleDriveSettings
@@ -14,20 +15,29 @@ from robot_sf.sim.sim_config import SimulationSettings
 logger = loguru.logger
 
 
-def make_env():
+def make_env(svg_map_path):
     ped_densities = [0.01, 0.02, 0.04, 0.08]
     difficulty = 2
-    map_definition = convert_map("maps/svg_maps/debug_03.svg")
+
+    map_definition = convert_map(svg_map_path)
     robot_model = PPO.load("./model/run_043", env=None)
 
-    env_config = PedEnvSettings(
+    config = PedestrianSimulationConfig(
         map_pool=MapDefinitionPool(map_defs={"my_map": map_definition}),
         sim_config=SimulationSettings(
             difficulty=difficulty, ped_density_by_difficulty=ped_densities
         ),
         robot_config=BicycleDriveSettings(radius=0.5, max_accel=3.0, allow_backwards=True),
+        spawn_near_robot=False,
     )
-    return PedestrianEnv(env_config, robot_model=robot_model, debug=True, recording_enabled=False)
+    env = make_pedestrian_env(
+        config=config,
+        robot_model=robot_model,
+        debug=True,
+        recording_enabled=False,
+    )
+
+    return env
 
 
 def get_file():
@@ -75,5 +85,39 @@ def extract_info(meta: dict, reward: float) -> str:
     return f"Episode: {eps_num}, Steps: {steps}, Done: {done}, Reward: {reward}, Distance: {dis}"
 
 
+def debug_bc_policy(model_path, svg_map_path):
+    env = make_env(svg_map_path)
+
+    # policy = load_policy(
+    #     policy_type="ppo",  # or "sac", typically used even with BC
+    #     venv=env,
+    #     path=model_path,
+    # )
+    policy = ActorCriticPolicy.load(model_path)
+
+    obs = env.reset()
+    ep_rewards = 0
+
+    for _ in range(1000):
+        if isinstance(obs, tuple):
+            obs = obs[0]
+        action, _ = policy.predict(obs, deterministic=True)
+        obs, reward, done, _, info = env.step(action)
+        ep_rewards += reward
+        env.render()
+        if done:
+            logger.info(f"Episode reward: {ep_rewards}")
+            ep_rewards = 0
+            obs = env.reset()
+            env.render()
+    env.exit()
+
+
 if __name__ == "__main__":
-    run()
+    SVG_MAP = "maps/svg_maps/debug_09.svg"
+    POLICY = "model_ped/bc_2025-07-28_19-53-01.zip"
+    debug_bc_policy(POLICY, SVG_MAP)
+
+
+# if __name__ == "__main__":
+#     run()

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="65"
+   height="59.175999"
+   viewBox="0 0 65 59.17595"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (2aeb623e1d, 2025-05-12)"
+   sodipodi:docname="debug_08.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     inkscape:zoom="9.1875"
+     inkscape:cx="18.993197"
+     inkscape:cy="36.952381"
+     inkscape:window-width="2494"
+     inkscape:window-height="1371"
+     inkscape:window-x="66"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="rect1-2"
+       width="50"
+       height="1.5"
+       x="3"
+       y="51.5"
+       ry="0.040751293"
+       inkscape:label="obstacle" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="rect1"
+       width="50"
+       height="1.5"
+       x="3"
+       y="3"
+       ry="0.040751293"
+       inkscape:label="obstacle" />
+    <rect
+       style="fill:#141e14;stroke-width:0;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none"
+       id="rect2"
+       width="1.5"
+       height="50"
+       x="3"
+       y="3"
+       ry="0.043764368"
+       inkscape:label="obstacle" />
+    <rect
+       style="fill:#141e14;stroke-width:0;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none"
+       id="rect7"
+       width="1.5"
+       height="43.5"
+       x="51.5"
+       y="3"
+       ry="0.039170079"
+       inkscape:label="obstacle" />
+    <rect
+       style="fill:#ffdf00;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="rect3"
+       width="5.6121616"
+       height="4.1415591"
+       x="7.4350524"
+       y="7.0001316"
+       ry="0.086273536"
+       inkscape:label="robot_spawn_zone" />
+    <rect
+       style="fill:#ff6c00;fill-opacity:1;stroke:#ff6c00;stroke-width:0;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="rect4"
+       width="4.8260679"
+       height="9.5421848"
+       x="56.361355"
+       y="43.500103"
+       ry="0.2686393"
+       inkscape:label="robot_goal_zone" />
+    <rect
+       style="fill:#107400;fill-opacity:1;stroke:#107400;stroke-width:0.0499358;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="rect6"
+       width="3.3282819"
+       height="3.0353844"
+       x="45.435188"
+       y="48.521908"
+       ry="0.064119972"
+       inkscape:label="ped_goal_zone" />
+    <rect
+       style="fill:#23ff00;fill-opacity:1;stroke:#23ff00;stroke-width:0.0726713;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="rect5"
+       width="5.2125363"
+       height="4.2810245"
+       x="45.646935"
+       y="24.085325"
+       ry="0.082416587"
+       inkscape:label="ped_spawn_zone" />
+    <path
+       style="fill:none;stroke:#597aff;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       d="M 10.340136,11.646258 9.9047619,20.244898 8.9251701,29.170068 9.7959184,38.748299 9.0340136,46.367347 16.761905,49.088435 26.44898,49.306122 35.918367,49.523809 42.44898,49.414966 47.129252,46.693877 48.217687,41.469387 48.108843,36.136054 47.782313,29.170068 47.455782,22.965986 47.346939,17.632653 47.020408,11.972789 V 7.292517 L 36.680272,7.5102041 29.931973,7.6190476 H 24.816326 L 19.809524,8.0544218 H 15.782313 L 10.122449,8.707483 14.040816,12.408163 17.197279,15.020408 20.462585,18.285714 23.727891,21.006802 27.646258,26.231292 30.802721,30.693877 34.285714,34.829932 37.659864,38.857142 41.142857,41.904762 43.755102,44.081632 46.911565,46.367347 50.285714,48.870748 56.163265,49.523809"
+       id="path8"
+       inkscape:label="robot_route_0_0" />
+    <path
+       style="fill:none;stroke:#b40305;stroke-width:0.492189;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       d="M 48.218104,28.517726 48.109094,41.15469 47.673051,47.999712"
+       id="path9"
+       inkscape:label="ped_route_0_0" />
+    <rect
+       style="fill:none;stroke:#a900b6;stroke-width:0.389039;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="rect9"
+       width="14.260622"
+       height="8.0565395"
+       x="13.441117"
+       y="14.42071"
+       ry="0.039506998"
+       inkscape:label="ped_crowded_zone" />
+    <rect
+       style="fill:none;stroke:#a900b6;stroke-width:0.389039;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="rect9-3"
+       width="14.260622"
+       height="8.0565395"
+       x="7.4734306"
+       y="42.412205"
+       ry="0.039506998"
+       inkscape:label="ped_crowded_zone" />
+    <rect
+       style="fill:none;stroke:#a900b6;stroke-width:0.389039;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="rect9-1"
+       width="14.260622"
+       height="8.0565395"
+       x="34.337376"
+       y="5.8407774"
+       ry="0.039506998"
+       inkscape:label="ped_crowded_zone" />
+    <rect
+       style="fill:none;stroke:#a900b6;stroke-width:0.389039;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="rect9-36"
+       width="14.260622"
+       height="8.0565395"
+       x="26.017649"
+       y="28.908804"
+       ry="0.039506998"
+       inkscape:label="ped_crowded_zone" />
+  </g>
+</svg>
