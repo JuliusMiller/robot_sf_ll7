@@ -74,8 +74,9 @@ class RefactoredPedestrianEnv(SingleAgentEnv):
         # Store reward function
         if reward_func is None:
             logger.warning("No reward function provided, using default simple_ped_reward.")
-            reward_func = simple_ped_reward
-        self.reward_func = reward_func
+            self.reward_func = simple_ped_reward
+        else:
+            self.reward_func = reward_func
 
         # Update config
         config.peds_have_obstacle_forces = peds_have_obstacle_forces
