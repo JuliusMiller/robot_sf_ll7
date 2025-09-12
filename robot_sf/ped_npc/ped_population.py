@@ -325,7 +325,6 @@ def populate_crowded_zones(
     return ped_states, groups, zone_assignments
 
 
-# TODO: Check if ego state is present otherwise use normal calculation
 def populate_simulation(
     tau: float,
     spawn_config: PedSpawnConfig,

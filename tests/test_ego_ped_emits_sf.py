@@ -47,7 +47,7 @@ def dummy_map():
     ).get_zone()
 
     ped_goal = SvgRectangle(
-        x=35, y=5, width=1, height=1, label="robot_goal", id_="robot_goal"
+        x=35, y=5, width=1, height=1, label="ped_goal", id_="ped_goal"
     ).get_zone()
 
     ped_path = GlobalRoute(
@@ -112,8 +112,8 @@ def test_npc_pedestrian_avoids_ego_pedestrian_social_force(env):
         # Get the social force for the NPC (index 0)
         sf = env.simulator.pysf_sim.forces[1]()  # index 1 is social force
         social_forces.append(sf[0].copy())
-        # env.render()
-        # time.sleep(0.05)
+        env.render()
+        time.sleep(0.05)
 
         if done:
             break

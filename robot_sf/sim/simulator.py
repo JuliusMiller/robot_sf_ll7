@@ -18,10 +18,35 @@ from robot_sf.ped_ego.unicycle_drive import UnicycleAction, UnicycleDrivePedestr
 from robot_sf.ped_npc.ped_behavior import PedestrianBehavior
 from robot_sf.ped_npc.ped_grouping import PedestrianGroupings, PedestrianStates
 from robot_sf.ped_npc.ped_population import PedSpawnConfig, populate_simulation
-from robot_sf.ped_npc.ped_robot_force import PedRobotForce
+from robot_sf.ped_npc.ped_robot_force import PedRobotForce, PedRobotForceConfig
 from robot_sf.ped_npc.ped_zone import sample_zone
 from robot_sf.robot.robot_state import Robot
 from robot_sf.util.types import RobotAction, RobotPose, Vec2D
+
+
+def make_forces(
+    sim: PySFSimulator,
+    config: PySFSimConfig,
+    robots: List[Robot],
+    peds_have_obstacle_forces: bool,
+    prf_config: PedRobotForceConfig,
+) -> List[PySFForce]:
+    """
+    Creates and configures the forces to be applied in the simulation,
+    excluding obstacle forces and adding pedestrian-robot interaction forces
+    if PRF is active.
+    """
+    forces = pysf_make_forces(sim, config)
+
+    if peds_have_obstacle_forces is False:
+        logger.info("Peds have no obstacle forces.")
+        # if peds have no obstacle forces, we filter the obstacle forces and remove them
+        forces = [f for f in forces if not isinstance(f, ObstacleForce)]
+    if prf_config.is_active:
+        for robot in robots:
+            prf_config.robot_radius = robot.config.radius
+            forces.append(PedRobotForce(prf_config, sim.peds, lambda: robot.pos))
+    return forces
 
 
 @dataclass
@@ -81,32 +106,18 @@ class Simulator:
             )
             self.peds_have_obstacle_forces = False
 
-        def make_forces(sim: PySFSimulator, config: PySFSimConfig) -> List[PySFForce]:
-            """
-            Creates and configures the forces to be applied in the simulation,
-            excluding obstacle forces and adding pedestrian-robot interaction forces
-            if PRF is active.
-            """
-            forces = pysf_make_forces(sim, config)
-
-            if self.peds_have_obstacle_forces is False:
-                logger.info("Peds have no obstacle forces.")
-                # if peds have no obstacle forces, we filter the obstacle forces and remove them
-                forces = [f for f in forces if not isinstance(f, ObstacleForce)]
-            if self.config.prf_config.is_active:
-                for robot in self.robots:
-                    self.config.prf_config.robot_radius = robot.config.radius
-                    forces.append(
-                        PedRobotForce(self.config.prf_config, sim.peds, lambda: robot.pos)
-                    )
-            return forces
-
         self.pysf_sim = PySFSimulator(
             self.pysf_state.pysf_states(),
             self.groups.groups_as_lists,
             self.map_def.obstacles_pysf,
             config=pysf_config,
-            make_forces=make_forces,
+            make_forces=lambda sim, sf_config: make_forces(
+                sim,
+                sf_config,
+                self.robots,
+                self.peds_have_obstacle_forces,
+                self.config.prf_config,
+            ),
         )
         self.pysf_sim.peds.step_width = self.config.time_per_step_in_secs
         self.pysf_sim.peds.max_speed_multiplier = self.config.peds_speed_mult
@@ -269,33 +280,14 @@ class PedSimulator(Simulator):
             add_ego_state=True,
         )
 
-        # TODO: Duplicated code, can be refactored
-        def make_forces(sim: PySFSimulator, config: PySFSimConfig) -> List[PySFForce]:
-            """
-            Creates and configures the forces to be applied in the simulation,
-            excluding obstacle forces and adding pedestrian-robot interaction forces
-            if PRF is active.
-            """
-            forces = pysf_make_forces(sim, config)
-
-            if self.peds_have_obstacle_forces is False:
-                logger.info("Peds have no obstacle forces.")
-                # if peds have no obstacle forces, we filter the obstacle forces and remove them
-                forces = [f for f in forces if not isinstance(f, ObstacleForce)]
-            if self.config.prf_config.is_active:
-                for robot in self.robots:
-                    self.config.prf_config.robot_radius = robot.config.radius
-                    forces.append(
-                        PedRobotForce(self.config.prf_config, sim.peds, lambda: robot.pos)
-                    )
-            return forces
-
         self.pysf_sim = PySFSimulator(
             self.pysf_state.pysf_states(),
             self.groups.groups_as_lists,
             self.map_def.obstacles_pysf,
             config=pysf_config,
-            make_forces=make_forces,
+            make_forces=lambda sim, sf_config: make_forces(
+                sim, sf_config, self.robots, self.peds_have_obstacle_forces, self.config.prf_config
+            ),
         )
         self.pysf_sim.peds.max_speed_multiplier = self.config.peds_speed_mult
 
