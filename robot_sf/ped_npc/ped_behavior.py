@@ -18,7 +18,7 @@ from robot_sf.util.types import Zone
 class PedestrianBehavior(Protocol):
     """
     !!! Not Implemented !!!
-    TODO: What is the purpose of this class?
+    This class is used for type checking the pedestrian behaviors.
     """
 
     def step(self):
@@ -158,10 +158,10 @@ class FollowRouteBehavior:
 
     def reset(self):
         """
-        No action is performed in this method.
-        TODO: Is this method necessary? If not, remove it.
+        Reset the groups to the start of their routes.
         """
-        pass
+        for gid, nav in self.navigators.items():
+            self.respawn_group_at_start(gid)
 
     def respawn_group_at_start(self, gid: int):
         """

@@ -31,6 +31,7 @@ class NewRobotEnv(SingleAgentEnv):
         video_path: str = None,
         video_fps: float = None,
         peds_have_obstacle_forces: bool = False,
+        debug_without_robot_movement: bool = True,  # TODO change to False later
         **kwargs,
     ):
         """
@@ -58,6 +59,9 @@ class NewRobotEnv(SingleAgentEnv):
         # Update config
         env_config.peds_have_obstacle_forces = peds_have_obstacle_forces
 
+        # Debug help
+        self.debug_without_robot_movement = debug_without_robot_movement
+
         # Initialize base class
         super().__init__(
             config=env_config, debug=debug, recording_enabled=recording_enabled, **kwargs
@@ -82,9 +86,6 @@ class NewRobotEnv(SingleAgentEnv):
     def _create_spaces(self):
         """Create action and observation spaces."""
         action_space, observation_space, orig_obs_space = init_spaces(self.config, self.map_def)
-        logger.error(f"Action space: {action_space}")
-        logger.error(f"Observation space: {observation_space}")
-        logger.error(f"Original observation space: {orig_obs_space}")
         return action_space, observation_space, orig_obs_space
 
     def _setup_simulator(self) -> None:
@@ -128,6 +129,8 @@ class NewRobotEnv(SingleAgentEnv):
         """Execute one environment step."""
         # Process the action through the simulator
         action = self.simulator.robots[0].parse_action(action)
+        if self.debug_without_robot_movement:
+            action = (0.0, 0.0)
 
         # Perform simulation step
         self.simulator.step_once([action])

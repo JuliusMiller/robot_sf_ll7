@@ -15,6 +15,7 @@ from robot_sf.nav.map_config import MapDefinition
 from robot_sf.nav.navigation import RouteNavigator, sample_route
 from robot_sf.nav.occupancy import is_circle_line_intersection
 from robot_sf.ped_ego.unicycle_drive import UnicycleAction, UnicycleDrivePedestrian
+from robot_sf.ped_npc.adversial_ped_force import AdversialPedForce, AdversialPedForceConfig
 from robot_sf.ped_npc.ped_behavior import PedestrianBehavior
 from robot_sf.ped_npc.ped_grouping import PedestrianGroupings, PedestrianStates
 from robot_sf.ped_npc.ped_population import PedSpawnConfig, populate_simulation
@@ -30,6 +31,7 @@ def make_forces(
     robots: List[Robot],
     peds_have_obstacle_forces: bool,
     prf_config: PedRobotForceConfig,
+    apf_config: AdversialPedForceConfig,
 ) -> List[PySFForce]:
     """
     Creates and configures the forces to be applied in the simulation,
@@ -46,6 +48,16 @@ def make_forces(
         for robot in robots:
             prf_config.robot_radius = robot.config.radius
             forces.append(PedRobotForce(prf_config, sim.peds, lambda: robot.pos))
+
+    if apf_config.is_active:
+        last_ped_idx = sim.peds.size() - 1
+        for robot in robots:
+            apf_config.robot_radius = robot.config.radius
+            forces.append(
+                AdversialPedForce(
+                    apf_config, sim.peds, lambda: robot.pos, target_ped_idx=last_ped_idx
+                )
+            )
     return forces
 
 
@@ -117,6 +129,7 @@ class Simulator:
                 self.robots,
                 self.peds_have_obstacle_forces,
                 self.config.prf_config,
+                self.config.apf_config,
             ),
         )
         self.pysf_sim.peds.step_width = self.config.time_per_step_in_secs

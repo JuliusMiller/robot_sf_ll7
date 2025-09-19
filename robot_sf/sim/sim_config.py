@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from math import ceil
 from typing import List
 
+from robot_sf.ped_npc.adversial_ped_force import AdversialPedForceConfig
 from robot_sf.ped_npc.ped_robot_force import PedRobotForceConfig
 
 
@@ -41,6 +42,9 @@ class SimulationSettings:
 
     prf_config: PedRobotForceConfig = field(default_factory=PedRobotForceConfig)
     """Pedestrian-robot force configuration"""
+
+    apf_config: AdversialPedForceConfig = field(default_factory=AdversialPedForceConfig)
+    """Adversarial pedestrian force configuration"""
 
     ped_density_by_difficulty: List[float] = field(default_factory=lambda: [0.01, 0.02, 0.04, 0.08])
     """Pedestrian density by difficulty level"""

@@ -1,3 +1,5 @@
+from time import sleep
+
 import loguru
 from stable_baselines3 import PPO
 
@@ -13,7 +15,7 @@ logger = loguru.logger
 
 def make_env(svg_map_path):
     ped_densities = [0.01, 0.02, 0.04, 0.08]
-    difficulty = 2
+    difficulty = 1
 
     map_definition = convert_map(svg_map_path)
 
@@ -35,9 +37,7 @@ def make_env(svg_map_path):
 
 
 def run():
-    env = make_env("maps/svg_maps/debug_05.svg")
-    logger.error(f"Current env observation space: {env.observation_space}")
-
+    env = make_env("maps/svg_maps/narrow_corridor.svg")
     model = PPO.load("./model/run_043", env=env)
     logger.info("Loading robot model from ./model/run_043")
 
@@ -46,6 +46,7 @@ def run():
         action, _ = model.predict(obs, deterministic=True)
         obs, _, done, _, _ = env.step(action)
         env.render()
+        sleep(0.1)
 
         if done:
             obs, _ = env.reset()

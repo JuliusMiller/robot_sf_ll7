@@ -468,10 +468,16 @@ class SimulationView:
 
     def _draw_pedestrians(self, ped_pos: np.ndarray):
         # TODO: display pedestrians with an image instead of a circle
-        for ped_x, ped_y in ped_pos:
+        if len(ped_pos) == 0:
+            return
+
+        for i, (ped_x, ped_y) in enumerate(ped_pos):
+            color = PED_COLOR
+            if i == len(ped_pos) - 1:
+                color = (0, 200, 0)  # Use green for the last pedestrian (customize as needed)
             pygame.draw.circle(
                 self.screen,
-                PED_COLOR,
+                color,
                 self._scale_tuple((ped_x, ped_y)),
                 self.ped_radius * self.scaling,
             )
