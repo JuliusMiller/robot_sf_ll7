@@ -33,6 +33,7 @@ class EnvironmentFactory:
         config: Optional[RobotSimulationConfig] = None,
         *,
         use_image_obs: bool = False,
+        new_env: bool = False,
         peds_have_obstacle_forces: bool = False,
         reward_func: Optional[Callable] = None,
         debug: bool = False,
@@ -76,10 +77,17 @@ class EnvironmentFactory:
             from robot_sf.gym_env.robot_env_with_image import RobotEnvWithImage
 
             env_class = RobotEnvWithImage
+        elif new_env:
+            # from robot_sf.gym_env.robot_env import RobotEnv
+            from robot_sf.gym_env.robot_env_new import NewRobotEnv
+
+            env_class = NewRobotEnv
         else:
             from robot_sf.gym_env.robot_env import RobotEnv
 
             env_class = RobotEnv
+
+        logger.info("Using environment: {}", env_class.__name__)
 
         return env_class(
             env_config=config,
