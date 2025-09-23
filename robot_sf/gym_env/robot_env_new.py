@@ -44,6 +44,7 @@ class NewRobotEnv(SingleAgentEnv):
             debug: Enable debug mode with visualization
             recording_enabled: Enable state recording
             peds_have_obstacle_forces: Whether pedestrians exert obstacle forces
+            debug_without_robot_movement: If True, the robot will not move
         """
         if env_config is None:
             logger.warning("No config provided, using default RobotSimulationConfig.")
@@ -61,6 +62,8 @@ class NewRobotEnv(SingleAgentEnv):
 
         # Debug help
         self.debug_without_robot_movement = debug_without_robot_movement
+        if self.debug_without_robot_movement:
+            logger.error("Debug mode: Robot will not move!")
 
         # Initialize base class
         super().__init__(

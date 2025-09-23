@@ -335,6 +335,24 @@ def populate_simulation(
     ped_crowded_zones: List[Zone],
     add_ego_state: bool = False,
 ) -> Tuple[PedestrianStates, PedestrianGroupings, List[PedestrianBehavior]]:
+    """
+    Populate the simulation with pedestrian states, groupings, and behaviors for both
+    route-following and crowded-zone pedestrians.
+
+    Args:
+        tau (float): Time constant for pedestrian state updates.
+        spawn_config (PedSpawnConfig): Configuration for pedestrian spawning and grouping.
+        ped_routes (List[GlobalRoute]): List of routes for route-following pedestrians.
+        ped_crowded_zones (List[Zone]): List of zones for crowded-zone pedestrians.
+        add_ego_state (bool, optional): If True, adds ego pedestrian state to pysf_state and
+                                        Ego_ped is included in the force calculations.
+
+    Returns:
+        Tuple[PedestrianStates, PedestrianGroupings, List[PedestrianBehavior]]:
+            - PedestrianStates: Combined pedestrian states for the simulation.
+            - PedestrianGroupings: Groupings of all pedestrians.
+            - List[PedestrianBehavior]: List containing behaviors for crowded zones and route following.
+    """
     crowd_ped_states_np, crowd_groups, zone_assignments = populate_crowded_zones(
         spawn_config, ped_crowded_zones
     )

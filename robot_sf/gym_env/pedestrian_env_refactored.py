@@ -61,6 +61,7 @@ class RefactoredPedestrianEnv(SingleAgentEnv):
             debug: Enable debug mode with visualization
             recording_enabled: Enable state recording
             peds_have_obstacle_forces: Whether pedestrians exert obstacle forces
+            debug_without_robot_movement: If True, the robot will not move
         """
         if config is None:
             config = PedestrianSimulationConfig()
@@ -69,7 +70,10 @@ class RefactoredPedestrianEnv(SingleAgentEnv):
         if robot_model is None:
             raise ValueError("Robot model is required for pedestrian environment!")
         self.robot_model = robot_model
+
         self.debug_without_robot_movement = debug_without_robot_movement
+        if self.debug_without_robot_movement:
+            logger.error("Debug mode: Robot will not move!")
 
         # Store reward function
         if reward_func is None:

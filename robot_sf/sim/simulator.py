@@ -280,7 +280,7 @@ class PedSimulator(Simulator):
 
     Args:
         ego_ped (UnicycleDrivePedestrian): The ego pedestrian in the environment.
-
+        spawn_near_robot (bool): Whether to spawn the ego pedestrian near the robot.
     """
 
     ego_ped: UnicycleDrivePedestrian
@@ -294,7 +294,7 @@ class PedSimulator(Simulator):
             spawn_config,
             self.map_def.ped_routes,
             self.map_def.ped_crowded_zones,
-            add_ego_state=True,
+            add_ego_state=True,  # Add Ego pedestrian state to pysf_state
         )
 
         self.pysf_sim = PySFSimulator(
@@ -343,12 +343,14 @@ class PedSimulator(Simulator):
                 waypoints = sample_route(self.map_def, None if self.random_start_pos else i)
                 nav.new_route(waypoints[1:])
                 robot.reset_state((waypoints[0], nav.initial_orientation))
+
         # Ego_pedestrian reset
         if self.spawn_near_robot:
             robot_spawn = self.robot_pos[0]
             ped_spawn = self.get_proximity_point(robot_spawn, 10, 15)
             self.ego_ped.reset_state((ped_spawn, self.ego_ped.pose[1]))
         else:
+            # Spawn ego pedestrian randomly in one of the pedestrian spawn zones
             ped_spawn_zone = sample(self.map_def.ped_spawn_zones, k=1)[0]
             ped_spawn = sample_zone(ped_spawn_zone, 1)[0]
             npc_orient = self.pysf_state.pysf_states()[
@@ -427,8 +429,8 @@ def init_ped_simulators(
     Parameters:
     env_config (PedEnvSettings): Configuration settings for the environment.
     map_def (MapDefinition): Definition of the map for the environment.
-    num_robots (int): Number of robots in the environment.
     random_start_pos (bool): Whether to start the robots at random positions.
+    peds_have_obstacle_forces (bool): Whether pedestrians have obstacle forces.
 
     Returns:
     sim (PedSimulator): A Simulator object for the pedestrian environment.
