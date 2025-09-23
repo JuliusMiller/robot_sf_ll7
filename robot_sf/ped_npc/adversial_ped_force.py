@@ -5,6 +5,7 @@ import numba
 import numpy as np
 from pysocialforce.scene import PedState
 
+from robot_sf.util.math import euclid_dist
 from robot_sf.util.types import RobotPose, Vec2D
 
 
@@ -102,33 +103,3 @@ def adversial_ped_force(
         norm = (direction[0] ** 2 + direction[1] ** 2) ** 0.5
         if norm > 1e-6:
             out_forces[target_ped_idx] = direction / norm * (threshold - distance)
-
-
-# TODO: REFACTOR TO UTILS FILE -> euclid_dist is defined in range_sensor.py
-@numba.njit(fastmath=True)
-def euclid_dist(v_1: Vec2D, v_2: Vec2D) -> float:
-    """
-    Compute the Euclidean distance between two 2D vectors.
-
-    This function uses the standard formula for Euclidean distance: sqrt((x1 - x2)^2 + (y1 - y2)^2).
-
-    Parameters
-    ----------
-    v_1 : Vec2D
-        The first 2D vector. This is a tuple or list of two numbers representing
-        the x and y coordinates.
-    v_2 : Vec2D
-        The second 2D vector. This is a tuple or list of two numbers representing
-        the x and y coordinates.
-
-    Returns
-    -------
-    float
-        The Euclidean distance between `v_1` and `v_2`.
-    """
-    # Compute the difference in x coordinates and square it
-    x_diff_sq = (v_1[0] - v_2[0]) ** 2
-    # Compute the difference in y coordinates and square it
-    y_diff_sq = (v_1[1] - v_2[1]) ** 2
-    # Return the square root of the sum of the squared differences
-    return (x_diff_sq + y_diff_sq) ** 0.5
