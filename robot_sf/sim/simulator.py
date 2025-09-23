@@ -55,7 +55,7 @@ def make_forces(
             apf_config.robot_radius = robot.config.radius
             forces.append(
                 AdversialPedForce(
-                    apf_config, sim.peds, lambda: robot.pos, target_ped_idx=last_ped_idx
+                    apf_config, sim.peds, lambda: robot.pose, target_ped_idx=last_ped_idx
                 )
             )
     return forces

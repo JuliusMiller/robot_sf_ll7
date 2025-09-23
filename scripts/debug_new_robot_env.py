@@ -7,6 +7,7 @@ from robot_sf.gym_env.environment_factory import make_robot_env
 from robot_sf.gym_env.unified_config import RobotSimulationConfig
 from robot_sf.nav.map_config import MapDefinitionPool
 from robot_sf.nav.svg_map_parser import convert_map
+from robot_sf.ped_npc.adversial_ped_force import AdversialPedForceConfig
 from robot_sf.robot.bicycle_drive import BicycleDriveSettings
 from robot_sf.sim.sim_config import SimulationSettings
 
@@ -19,12 +20,15 @@ def make_env(svg_map_path):
 
     map_definition = convert_map(svg_map_path)
 
+    apf_config = AdversialPedForceConfig(offset=10.0)
+
     config = RobotSimulationConfig(
         map_pool=MapDefinitionPool(map_defs={"my_map": map_definition}),
         sim_config=SimulationSettings(
             difficulty=difficulty,
             ped_density_by_difficulty=ped_densities,
             peds_reset_follow_route_at_start=True,
+            apf_config=apf_config,
         ),
         robot_config=BicycleDriveSettings(radius=0.5, max_accel=3.0, allow_backwards=True),
     )
