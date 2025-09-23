@@ -3,7 +3,6 @@ from pathlib import Path
 
 import loguru
 from stable_baselines3 import PPO
-from stable_baselines3.common.policies import ActorCriticPolicy
 
 from robot_sf.gym_env.environment_factory import make_pedestrian_env
 from robot_sf.gym_env.unified_config import PedestrianSimulationConfig
@@ -85,39 +84,5 @@ def extract_info(meta: dict, reward: float) -> str:
     return f"Episode: {eps_num}, Steps: {steps}, Done: {done}, Reward: {reward}, Distance: {dis}"
 
 
-def debug_bc_policy(model_path, svg_map_path):
-    env = make_env(svg_map_path)
-
-    # policy = load_policy(
-    #     policy_type="ppo",  # or "sac", typically used even with BC
-    #     venv=env,
-    #     path=model_path,
-    # )
-    policy = ActorCriticPolicy.load(model_path)
-
-    obs = env.reset()
-    ep_rewards = 0
-
-    for _ in range(1000):
-        if isinstance(obs, tuple):
-            obs = obs[0]
-        action, _ = policy.predict(obs, deterministic=True)
-        obs, reward, done, _, info = env.step(action)
-        ep_rewards += reward
-        env.render()
-        if done:
-            logger.info(f"Episode reward: {ep_rewards}")
-            ep_rewards = 0
-            obs = env.reset()
-            env.render()
-    env.exit()
-
-
 if __name__ == "__main__":
-    SVG_MAP = "maps/svg_maps/debug_09.svg"
-    POLICY = "model_ped/bc_2025-07-28_19-53-01.zip"
-    debug_bc_policy(POLICY, SVG_MAP)
-
-
-# if __name__ == "__main__":
-#     run()
+    run()
