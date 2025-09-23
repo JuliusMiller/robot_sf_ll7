@@ -107,6 +107,8 @@ class FollowRouteBehavior:
         The distance threshold for proximity to a goal. Default is 1.
     navigators : Dict[int, RouteNavigator]
         The navigators for each group. Initialized in the post-init method.
+    reset_start : bool
+        If True, groups will reset to the start of their routes on reset.
 
     Methods
     -------
@@ -124,6 +126,7 @@ class FollowRouteBehavior:
     initial_sections: List[int]
     goal_proximity_threshold: float = 1
     navigators: Dict[int, RouteNavigator] = field(init=False)
+    reset_start: bool = False
 
     def __post_init__(self):
         """
@@ -160,8 +163,9 @@ class FollowRouteBehavior:
         """
         Reset the groups to the start of their routes.
         """
-        for gid, nav in self.navigators.items():
-            self.respawn_group_at_start(gid)
+        if self.reset_start:
+            for gid, nav in self.navigators.items():
+                self.respawn_group_at_start(gid)
 
     def respawn_group_at_start(self, gid: int):
         """

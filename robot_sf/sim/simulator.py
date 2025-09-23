@@ -102,7 +102,11 @@ class Simulator:
         and robot navigators.
         """
         pysf_config = PySFSimConfig()
-        spawn_config = PedSpawnConfig(self.config.peds_per_area_m2, self.config.max_peds_per_group)
+        spawn_config = PedSpawnConfig(
+            self.config.peds_per_area_m2,
+            self.config.max_peds_per_group,
+            reset_follow_route_at_start=self.config.peds_reset_follow_route_at_start,
+        )
         self.pysf_state, self.groups, self.peds_behaviors = populate_simulation(
             pysf_config.scene_config.tau,
             spawn_config,

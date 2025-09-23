@@ -49,6 +49,9 @@ class SimulationSettings:
     ped_density_by_difficulty: List[float] = field(default_factory=lambda: [0.01, 0.02, 0.04, 0.08])
     """Pedestrian density by difficulty level"""
 
+    peds_reset_follow_route_at_start: bool = False
+    """Whether pedestrians following routes should reset to the start of their routes"""
+
     def __post_init__(self):
         """
         Validate the simulation settings.

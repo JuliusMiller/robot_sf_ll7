@@ -28,6 +28,8 @@ class PedSpawnConfig:
         initial_speed: The initial walking speed for pedestrians.
         group_size_decay: The rate at which the probability of larger group sizes decays.
         sidewalk_width: The width of the sidewalk where pedestrians can spawn.
+        reset_follow_route_at_start: If True, pedestrians following routes will reset to the start
+                                     of their routes.
     """
 
     peds_per_area_m2: float
@@ -36,6 +38,7 @@ class PedSpawnConfig:
     initial_speed: float = 0.5
     group_size_decay: float = 0.3
     sidewalk_width: float = 3.0
+    reset_follow_route_at_start: bool = False
 
     def __post_init__(self):
         """
@@ -382,6 +385,11 @@ def populate_simulation(
         route_groupings.new_group(ped_ids)
 
     crowd_behavior = CrowdedZoneBehavior(crowd_groupings, zone_assignments, ped_crowded_zones)
-    route_behavior = FollowRouteBehavior(route_groupings, route_assignments, initial_sections)
+    route_behavior = FollowRouteBehavior(
+        route_groupings,
+        route_assignments,
+        initial_sections,
+        reset_start=spawn_config.reset_follow_route_at_start,
+    )
     ped_behaviors: List[PedestrianBehavior] = [crowd_behavior, route_behavior]
     return pysf_state, groups, ped_behaviors
