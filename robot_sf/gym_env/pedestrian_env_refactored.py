@@ -48,7 +48,6 @@ class RefactoredPedestrianEnv(SingleAgentEnv):
         debug: bool = False,
         recording_enabled: bool = False,
         peds_have_obstacle_forces: bool = False,
-        debug_without_robot_movement: bool = False,
         **kwargs,
     ):
         """
@@ -71,9 +70,12 @@ class RefactoredPedestrianEnv(SingleAgentEnv):
             raise ValueError("Robot model is required for pedestrian environment!")
         self.robot_model = robot_model
 
-        self.debug_without_robot_movement = debug_without_robot_movement
-        if self.debug_without_robot_movement:
+        # Debug help
+        if config.sim_config.debug_without_robot_movement:
+            self.debug_without_robot_movement = config.sim_config.debug_without_robot_movement
             logger.error("Debug mode: Robot will not move!")
+        else:
+            self.debug_without_robot_movement = False
 
         # Store reward function
         if reward_func is None:

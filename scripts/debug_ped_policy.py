@@ -24,7 +24,9 @@ def make_env(svg_map_path):
     config = PedestrianSimulationConfig(
         map_pool=MapDefinitionPool(map_defs={"my_map": map_definition}),
         sim_config=SimulationSettings(
-            difficulty=difficulty, ped_density_by_difficulty=ped_densities
+            difficulty=difficulty,
+            ped_density_by_difficulty=ped_densities,
+            debug_without_robot_movement=True,
         ),
         robot_config=BicycleDriveSettings(radius=0.5, max_accel=3.0, allow_backwards=True),
         spawn_near_robot=False,
@@ -49,7 +51,7 @@ def get_file():
 
 
 def run():
-    env = make_env()
+    env = make_env("maps/svg_maps/narrow_corridor.svg")
     filename = get_file()
     # filename = "./model_ped/ppo_2024-09-06_23-52-17.zip"
     logger.info(f"Loading pedestrian model from {filename}")

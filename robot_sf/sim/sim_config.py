@@ -52,6 +52,9 @@ class SimulationSettings:
     peds_reset_follow_route_at_start: bool = False
     """Whether pedestrians following routes should reset to the start of their routes"""
 
+    debug_without_robot_movement: bool = False
+    """If True, the robot will not move (for debugging purposes)"""
+
     def __post_init__(self):
         """
         Validate the simulation settings.

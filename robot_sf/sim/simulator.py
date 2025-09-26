@@ -303,7 +303,12 @@ class PedSimulator(Simulator):
             self.map_def.obstacles_pysf,
             config=pysf_config,
             make_forces=lambda sim, sf_config: make_forces(
-                sim, sf_config, self.robots, self.peds_have_obstacle_forces, self.config.prf_config
+                sim,
+                sf_config,
+                self.robots,
+                self.peds_have_obstacle_forces,
+                self.config.prf_config,
+                self.config.apf_config,
             ),
         )
         self.pysf_sim.peds.max_speed_multiplier = self.config.peds_speed_mult

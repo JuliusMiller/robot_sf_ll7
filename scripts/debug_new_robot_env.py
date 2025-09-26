@@ -20,7 +20,7 @@ def make_env(svg_map_path):
 
     map_definition = convert_map(svg_map_path)
 
-    apf_config = AdversialPedForceConfig(offset=10.0)
+    apf_config = AdversialPedForceConfig(isactive=True, offset=10.0)
 
     config = RobotSimulationConfig(
         map_pool=MapDefinitionPool(map_defs={"my_map": map_definition}),
@@ -29,6 +29,7 @@ def make_env(svg_map_path):
             ped_density_by_difficulty=ped_densities,
             peds_reset_follow_route_at_start=True,
             apf_config=apf_config,
+            debug_without_robot_movement=True,  # Enable debug mode to prevent robot movement
         ),
         robot_config=BicycleDriveSettings(radius=0.5, max_accel=3.0, allow_backwards=True),
     )

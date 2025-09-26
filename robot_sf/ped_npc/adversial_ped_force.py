@@ -11,7 +11,7 @@ from robot_sf.util.types import RobotPose, Vec2D
 
 @dataclass
 class AdversialPedForceConfig:
-    is_active: bool = True
+    is_active: bool = False
     robot_radius: float = 1.0
     activation_threshold: float = 50.0
     force_multiplier: float = 2.0

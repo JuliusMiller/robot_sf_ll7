@@ -31,7 +31,6 @@ class NewRobotEnv(SingleAgentEnv):
         video_path: str = None,
         video_fps: float = None,
         peds_have_obstacle_forces: bool = False,
-        debug_without_robot_movement: bool = True,  # TODO change to False later
         **kwargs,
     ):
         """
@@ -61,9 +60,11 @@ class NewRobotEnv(SingleAgentEnv):
         env_config.peds_have_obstacle_forces = peds_have_obstacle_forces
 
         # Debug help
-        self.debug_without_robot_movement = debug_without_robot_movement
-        if self.debug_without_robot_movement:
+        if env_config.sim_config.debug_without_robot_movement:
+            self.debug_without_robot_movement = env_config.sim_config.debug_without_robot_movement
             logger.error("Debug mode: Robot will not move!")
+        else:
+            self.debug_without_robot_movement = False
 
         # Initialize base class
         super().__init__(
