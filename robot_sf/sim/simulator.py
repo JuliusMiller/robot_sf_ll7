@@ -50,14 +50,9 @@ def make_forces(
             forces.append(PedRobotForce(prf_config, sim.peds, lambda: robot.pos))
 
     if apf_config.is_active:
-        last_ped_idx = sim.peds.size() - 1
         for robot in robots:
             apf_config.robot_radius = robot.config.radius
-            forces.append(
-                AdversialPedForce(
-                    apf_config, sim.peds, lambda: robot.pose, target_ped_idx=last_ped_idx
-                )
-            )
+            forces.append(AdversialPedForce(apf_config, sim.peds, lambda: robot.pose))
     return forces
 
 
@@ -146,6 +141,8 @@ class Simulator:
         for behavior in self.peds_behaviors:
             behavior.reset()
 
+        self.force_history = []  # TODO: REMOVE AFTER DEBUGGING
+
     @property
     def goal_pos(self) -> List[Vec2D]:
         """
@@ -203,7 +200,10 @@ class Simulator:
         """
         for behavior in self.peds_behaviors:
             behavior.step()
-        ped_forces = self.pysf_sim.compute_forces()
+        ped_forces, force_list = self.pysf_sim.compute_forces()
+
+        self.force_history.append(force_list)  # TODO: REMOVE AFTER DEBUGGING
+
         groups = self.groups.groups_as_lists
         self.pysf_sim.peds.step(ped_forces, groups)
         for robot, nav, action in zip(self.robots, self.robot_navs, actions):
