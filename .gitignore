@@ -48,3 +48,6 @@ dist/
 
 .gemini/
 gha-creds-*.json
+
+# Cmake
+third_party/python-rvo2/.*

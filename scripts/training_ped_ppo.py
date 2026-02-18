@@ -1,4 +1,9 @@
-"""TODO docstring. Document this module."""
+"""Training script for pedestrian avoidance using PPO with adversarial metrics.
+
+This module provides training functionality for a robot navigation policy
+using Proximal Policy Optimization (PPO) in environments with pedestrians
+of varying densities.
+"""
 
 import datetime
 
@@ -21,25 +26,37 @@ logger = loguru.logger
 
 
 def training(svg_map_path: str):
-    """Train a pedestrian PPO policy on the specified SVG map.
+    """Train a PPO policy for pedestrian avoidance on a given SVG map.
+
+    This function builds a vectorized pedestrian environment using the provided SVG map,
+    loads a pretrained robot model, and trains a PPO agent with adversarial metrics
+    logging and periodic checkpointing. The trained policy is saved with a timestamp.
 
     Args:
-        svg_map_path: Path to the SVG map used for environment setup.
+        svg_map_path: Path to the SVG map file used to build the environment.
+
+    Side Effects:
+        - Creates multiple environment subprocesses.
+        - Writes TensorBoard logs under ``./logs/ppo_logs/``.
+        - Writes checkpoints under ``./model/backup``.
+        - Saves the final model under ``./model_ped/`` with a timestamp.
+
+    Raises:
+        FileNotFoundError: If ``svg_map_path`` or the pretrained model path is invalid.
+        OSError: If the environment cannot spawn subprocesses or write output files.
     """
     n_envs = 20
     ped_densities = [0.01, 0.02, 0.04, 0.08]
     difficulty = 2
 
     def make_env():
-        """TODO docstring. Document this function."""
         map_definition = convert_map(svg_map_path)
         robot_model = PPO.load("./model/run_043", env=None)
 
         env_config = PedEnvSettings(
             map_pool=MapDefinitionPool(map_defs={"my_map": map_definition}),
             sim_config=SimulationSettings(
-                difficulty=difficulty,
-                ped_density_by_difficulty=ped_densities,
+                difficulty=difficulty, ped_density_by_difficulty=ped_densities
             ),
             robot_config=BicycleDriveSettings(radius=0.5, max_accel=3.0, allow_backwards=True),
         )
@@ -49,10 +66,7 @@ def training(svg_map_path: str):
 
     policy_kwargs = {"features_extractor_class": DynamicsExtractor}
     model = PPO(
-        "MultiInputPolicy",
-        env,
-        tensorboard_log="./logs/ppo_logs/",
-        policy_kwargs=policy_kwargs,
+        "MultiInputPolicy", env, tensorboard_log="./logs/ppo_logs/", policy_kwargs=policy_kwargs
     )
     save_model_callback = CheckpointCallback(500_000 // n_envs, "./model/backup", "ppo_model")
     collect_metrics_callback = AdversialPedestrianMetricsCallback(n_envs)
@@ -61,7 +75,7 @@ def training(svg_map_path: str):
     model.learn(total_timesteps=10_000_000, progress_bar=True, callback=combined_callback)
     now = datetime.datetime.now()
     filename = now.strftime("%Y-%m-%d_%H-%M-%S")
-    model.save(f"./model/pedestrian/ppo_{filename}")
+    model.save(f"./model_ped/ppo_{filename}")
     logger.info(f"Model saved as ppo_{filename}")
 
 

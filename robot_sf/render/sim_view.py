@@ -823,12 +823,16 @@ class SimulationView:
 
         radius_px = self.ped_radius * self.scaling
         ped_sprite = self._get_entity_sprite("ped") if self.ped_render_mode == "sprite" else None
-        for ped_x, ped_y in ped_pos:
+        for i, (ped_x, ped_y) in enumerate(ped_pos):
             center = self._scale_tuple((ped_x, ped_y))
             if ped_sprite is not None:
                 self._draw_sprite(ped_sprite, center, radius_px)
             else:
-                pygame.draw.circle(self.screen, PED_COLOR, center, radius_px)
+                if i == len(ped_pos) - 1:
+                    color = (0, 200, 0)
+                else:
+                    color = PED_COLOR
+                pygame.draw.circle(self.screen, color, center, radius_px)
 
             # If we have an action for this ped, draw a direction line
             if action_map:

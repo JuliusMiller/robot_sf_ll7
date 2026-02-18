@@ -287,6 +287,13 @@ class RobotEnv(BaseEnv):
             self.map_def,
         )
 
+        # Debug help
+        if env_config.sim_config.debug_without_robot_movement:
+            self.debug_without_robot_movement = env_config.sim_config.debug_without_robot_movement
+            logger.error("Debug mode: Robot will not move!")
+        else:
+            self.debug_without_robot_movement = False
+
         # Assign the reward function; ensure a valid callable even if None passed via factory
         if reward_func is None:  # defensive: factory allows Optional
             logger.debug(
@@ -467,6 +474,11 @@ class RobotEnv(BaseEnv):
         """
         # Process the action through the simulator
         action = self.simulator.robots[0].parse_action(action)
+
+        # Debug help: Override action to zero to prevent robot movement when debug mode is enabled
+        if self.debug_without_robot_movement:
+            action = (0.0, 0.0)
+
         # Perform simulation step
         self.simulator.step_once([action])
         # Get updated observation

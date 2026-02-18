@@ -4,7 +4,7 @@ Usage:
     uv run python examples/advanced/11_ego_pedestrian_policy.py
 
 Prerequisites:
-    - maps/svg_maps/narrow_corridor2.svg
+    - maps/svg_maps/debug06.svg
     - model/run_043
 
 Expected Output:
@@ -33,11 +33,7 @@ logger.info("Running ego pedestrian simulation with random actions and recording
 
 
 def test_simulation(map_definition: MapDefinition):
-    """TODO docstring. Document this function.
-
-    Args:
-        map_definition: TODO docstring.
-    """
+    """Run a short ego pedestrian simulation and render the playback loop."""
     logger.info("Creating the environment.")
     env_config = PedEnvSettings(
         map_pool=MapDefinitionPool(map_defs={"my_map": map_definition}),
@@ -51,7 +47,7 @@ def test_simulation(map_definition: MapDefinition):
         env_config,
         robot_model=robot_model,
         debug=True,
-        recording_enabled=True,
+        recording_enabled=False,
         peds_have_obstacle_forces=True,
     )
 
@@ -80,8 +76,14 @@ def get_file():
 
 
 def main():
-    """TODO docstring. Document this function."""
-    map_def = convert_map("maps/svg_maps/narrow_corridor2.svg")
+    """Run ego pedestrian simulation and visualize the recorded playback.
+
+    This function orchestrates the complete workflow:
+    1. Loads the map from SVG
+    2. Runs a simulation with the trained policy
+    3. Loads and visualizes the recorded states
+    """
+    map_def = convert_map("maps/svg_maps/debug_06.svg")
 
     test_simulation(map_def)
 
