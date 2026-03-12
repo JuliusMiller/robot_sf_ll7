@@ -194,6 +194,7 @@ class PedEnvSettings(EnvSettings):
     """
 
     ego_ped_config: UnicycleDriveSettings = field(default_factory=UnicycleDriveSettings)
+    spawn_near_robot: bool = True  # Whether to spawn the ego pedestrian near the robot
 
     def __post_init__(self):
         """Validate pedestrian configuration and ensure radius consistency.

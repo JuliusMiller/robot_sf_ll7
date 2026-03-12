@@ -104,6 +104,13 @@ class RefactoredPedestrianEnv(SingleAgentEnv):
             robot_model = StubRobotModel()
         self.robot_model = robot_model
 
+        # Debug help
+        self.debug_without_robot_movement = env_config.sim_config.debug_without_robot_movement
+        if self.debug_without_robot_movement:
+            logger.warning(
+                "Debug without robot movement enabled: Robot will not move regardless of model output."
+            )
+
         # Store reward function
         self.reward_func = reward_func or simple_ped_reward
 
@@ -327,7 +334,7 @@ class RefactoredPedestrianEnv(SingleAgentEnv):
         self.last_action_ped = action_ped
 
         # Get robot action from model
-        if not self._robot_action_space_valid:
+        if not self._robot_action_space_valid or self.debug_without_robot_movement:
             action_robot = self._null_robot_action()
         else:
             try:

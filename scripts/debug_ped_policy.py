@@ -1,4 +1,4 @@
-"""TODO docstring. Document this module."""
+"""Debug runner for pedestrian policy models in the SocialForce simulator."""
 
 import os
 from pathlib import Path
@@ -6,8 +6,8 @@ from pathlib import Path
 import loguru
 from stable_baselines3 import PPO
 
-from robot_sf.gym_env.env_config import PedEnvSettings
-from robot_sf.gym_env.pedestrian_env import PedestrianEnv
+from robot_sf.gym_env.environment_factory import make_pedestrian_env
+from robot_sf.gym_env.unified_config import PedestrianSimulationConfig
 from robot_sf.nav.map_config import MapDefinitionPool
 from robot_sf.nav.svg_map_parser import convert_map
 from robot_sf.robot.bicycle_drive import BicycleDriveSettings
@@ -16,22 +16,43 @@ from robot_sf.sim.sim_config import SimulationSettings
 logger = loguru.logger
 
 
-def make_env():
-    """TODO docstring. Document this function."""
+def make_env(svg_map_path):
+    """Create a pedestrian simulation environment for debugging.
+
+    Parameters
+    ----------
+    svg_map_path : str
+        Path to the SVG map file.
+
+    Returns
+    -------
+    gym.Env
+        Pedestrian simulation environment with loaded robot model.
+    """
     ped_densities = [0.01, 0.02, 0.04, 0.08]
     difficulty = 2
-    map_definition = convert_map("maps/svg_maps/debug_03.svg")
+
+    map_definition = convert_map(svg_map_path)
     robot_model = PPO.load("./model/run_043", env=None)
 
-    env_config = PedEnvSettings(
+    config = PedestrianSimulationConfig(
         map_pool=MapDefinitionPool(map_defs={"my_map": map_definition}),
         sim_config=SimulationSettings(
             difficulty=difficulty,
             ped_density_by_difficulty=ped_densities,
+            debug_without_robot_movement=True,
         ),
         robot_config=BicycleDriveSettings(radius=0.5, max_accel=3.0, allow_backwards=True),
+        spawn_near_robot=False,
     )
-    return PedestrianEnv(env_config, robot_model=robot_model, debug=True, recording_enabled=False)
+    env = make_pedestrian_env(
+        config=config,
+        robot_model=robot_model,
+        debug=True,
+        recording_enabled=False,
+    )
+
+    return env
 
 
 def get_file():
@@ -45,10 +66,15 @@ def get_file():
 
 
 def run():
-    """Run an interactive debug loop for the latest pedestrian PPO policy."""
-    env = make_env()
+    """Run the pedestrian policy debugger.
+
+    Loads the latest pedestrian model from the model_ped directory,
+    creates a pedestrian simulation environment, and runs the model
+    for 10000 steps while collecting episode statistics.
+    """
+    env = make_env("maps/svg_maps/debug_06.svg")
     filename = get_file()
-    # filename = "./model/pedestrian/ppo_2024-09-06_23-52-17.zip"
+    # filename = "./model_ped/ppo_2024-09-06_23-52-17.zip"
     logger.info(f"Loading pedestrian model from {filename}")
 
     model = PPO.load(filename, env=env)
@@ -73,14 +99,20 @@ def run():
 
 
 def extract_info(meta: dict, reward: float) -> str:
-    """TODO docstring. Document this function.
+    """Extract and format episode statistics from metadata.
 
-    Args:
-        meta: TODO docstring.
-        reward: TODO docstring.
+    Parameters
+    ----------
+    meta : dict
+        Metadata dictionary containing episode information.
+    reward : float
+        Cumulative reward for the episode.
 
-    Returns:
-        TODO docstring.
+    Returns
+    -------
+    str
+        Formatted string containing episode number, steps, done conditions,
+        reward, and distance to robot.
     """
     meta = meta["meta"]
     eps_num = meta["episode"]

@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from math import ceil
 
+from robot_sf.ped_npc.adversial_ped_force import AdversialPedForceConfig
 from robot_sf.ped_npc.ped_robot_force import PedRobotForceConfig
 
 
@@ -43,6 +44,9 @@ class SimulationSettings:
     prf_config: PedRobotForceConfig = field(default_factory=PedRobotForceConfig)
     """Pedestrian-robot force configuration"""
 
+    apf_config: AdversialPedForceConfig = field(default_factory=AdversialPedForceConfig)
+    """Adversarial pedestrian force configuration"""
+
     ped_density_by_difficulty: list[float] = field(default_factory=lambda: [0.01, 0.02, 0.04, 0.08])
     """Pedestrian density by difficulty level"""
     max_total_pedestrians: int | None = None
@@ -53,6 +57,11 @@ class SimulationSettings:
     """Fraction of spacing used as jitter when route_spawn_distribution='spread'."""
     route_spawn_seed: int | None = None
     """Optional RNG seed for route spawn placement/jitter."""
+
+    peds_reset_follow_route_at_start: bool = False
+    """Whether pedestrians following routes should reset to the start of their routes"""
+    debug_without_robot_movement: bool = False
+    """Whether to disable robot movement in the simulator for debugging purposes"""
 
     def __post_init__(self):
         """
