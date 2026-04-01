@@ -14,7 +14,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import os
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -122,7 +121,7 @@ def _latest_ped_model_path() -> Path:
     if not model_dir.exists():
         raise FileNotFoundError(f"Directory not found: {model_dir}")
 
-    candidates = sorted(model_dir.glob("*.zip"), key=os.path.getctime)
+    candidates = sorted(model_dir.glob("*.zip"), key=lambda path: path.stat().st_mtime)
     if not candidates:
         raise FileNotFoundError("No pedestrian model checkpoints found in model_ped/")
     return candidates[-1]
@@ -231,6 +230,15 @@ def _is_robot_collision(meta: dict[str, Any]) -> bool:
     return bool(meta.get("is_robot_collision", False))
 
 
+def _is_robot_pedestrian_collision(meta: dict[str, Any]) -> bool:
+    """Return whether the terminal event was specifically a robot-pedestrian collision."""
+    if "is_robot_pedestrian_collision" in meta:
+        return bool(meta.get("is_robot_pedestrian_collision", False))
+    if "is_robot_ped_collision" in meta:
+        return bool(meta.get("is_robot_ped_collision", False))
+    return bool(meta.get("robot_ped_collision_zone"))
+
+
 def _collect_collision_samples(
     *,
     meta: dict[str, Any],
@@ -240,7 +248,7 @@ def _collect_collision_samples(
     impact_angle_deg_at_collision: list[float],
     zone_counts: dict[str, int],
 ) -> None:
-    if not _is_robot_collision(meta):
+    if not _is_robot_pedestrian_collision(meta):
         return
     robot_speed_at_collision.append(_extract_robot_speed(meta, env))
     ped_speed_at_collision.append(_extract_ped_speed(env))
@@ -258,7 +266,7 @@ def _update_outcome_counts(meta: dict[str, Any], counts: dict[str, int]) -> None
     counts["robot_collision"] += int(_is_robot_collision(meta))
     counts["robot_at_goal"] += int(bool(meta.get("is_robot_at_goal", False)))
     counts["robot_obstacle_collision"] += int(bool(meta.get("is_robot_obstacle_collision", False)))
-    counts["robot_ped_collision"] += int(bool(meta.get("is_robot_pedestrian_collision", False)))
+    counts["robot_ped_collision"] += int(_is_robot_pedestrian_collision(meta))
 
 
 def run_benchmark(
@@ -436,8 +444,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--ped-model",
         type=str,
-        default="latest",
-        help="Pedestrian model path or model name (default: latest model_ped/*.zip).",
+        required=True,
+        help=(
+            "Pedestrian model path or pinned model name. "
+            "Pass 'latest' explicitly to opt into mtime-based selection."
+        ),
     )
     parser.add_argument(
         "--robot-model",

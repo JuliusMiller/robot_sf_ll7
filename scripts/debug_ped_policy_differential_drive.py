@@ -5,11 +5,9 @@ run_023 differential-drive robot profile and legacy observation adapter logic
 used in ``scripts/debug_ped_apf.py``.
 """
 
-import os
 from pathlib import Path
 
 import loguru
-import numpy as np
 from stable_baselines3 import PPO
 
 from robot_sf.gym_env.environment_factory import make_pedestrian_env
@@ -19,41 +17,17 @@ from robot_sf.nav.map_config import MapDefinitionPool
 from robot_sf.nav.svg_map_parser import convert_map
 from robot_sf.robot.differential_drive import DifferentialDriveSettings
 from robot_sf.sensor.range_sensor import LidarScannerSettings
-from robot_sf.sensor.sensor_fusion import OBS_DRIVE_STATE, OBS_RAYS
 from robot_sf.sim.sim_config import SimulationSettings
+from robot_sf.training.observation_wrappers import LegacyRun023ObsAdapter
 
 logger = loguru.logger
 
 
-class LegacyRun023ObsAdapter:
-    """Wrap a PPO model so run_023 receives its legacy flattened observation format."""
-
-    def __init__(self, model: PPO):
-        """Store the wrapped model and expose action-space compatibility hooks."""
-        self._model = model
-        self.action_space = getattr(model, "action_space", None)
-
-    def set_action_space(self, action_space) -> None:
-        """Allow env-side action-space synchronization."""
-        self.action_space = action_space
-        if hasattr(self._model, "set_action_space"):
-            self._model.set_action_space(action_space)
-
-    def predict(self, obs, deterministic: bool = True):
-        """Adapt dict observations to the run_023 flattened format before inference."""
-        adapted_obs = obs
-        if isinstance(obs, dict):
-            drive_state = np.asarray(obs[OBS_DRIVE_STATE])
-            ray_state = np.asarray(obs[OBS_RAYS])
-
-            drive_state = drive_state[:, :-1]
-            drive_state[:, 2] *= 10
-
-            drive_state = np.squeeze(drive_state).reshape(-1)
-            ray_state = np.squeeze(ray_state).reshape(-1)
-            adapted_obs = np.concatenate((ray_state, drive_state), axis=0)
-
-        return self._model.predict(adapted_obs, deterministic=deterministic)
+def _extract_linear_speed(speed_like) -> float:
+    """Return the translational component from a scalar/sequence speed value."""
+    if isinstance(speed_like, (tuple, list)):
+        return float(speed_like[0]) if speed_like else float("nan")
+    return float(speed_like)
 
 
 def make_env(svg_map_path: str):
@@ -92,7 +66,7 @@ def get_latest_ped_model_file() -> Path:
     if not model_dir.exists():
         raise FileNotFoundError("Directory not found: model_ped")
 
-    candidates = sorted(model_dir.glob("*.zip"), key=os.path.getctime)
+    candidates = sorted(model_dir.glob("*.zip"), key=lambda path: path.stat().st_mtime)
     if not candidates:
         raise FileNotFoundError("No pedestrian model checkpoints found in model_ped")
 
@@ -118,34 +92,34 @@ def extract_info(meta: dict, reward: float) -> str:
 def run():
     """Run the differential-drive pedestrian policy debugger."""
     env = make_env("maps/svg_maps/masterthesis/headon.svg")
+    try:
+        filename = get_latest_ped_model_file()
+        logger.info(f"Loading pedestrian model from {filename}")
+        model = PPO.load(str(filename), env=env)
 
-    filename = get_latest_ped_model_file()
-    filename = "./model_ped/ppo_2026-03-30_12-25-31.zip"
-    logger.info(f"Loading pedestrian model from {filename}")
-    model = PPO.load(str(filename), env=env)
+        obs = env.reset()
+        ep_rewards = 0.0
 
-    obs = env.reset()
-    ep_rewards = 0.0
-
-    for _ in range(10000):
-        if isinstance(obs, tuple):
-            obs = obs[0]
-        action, _ = model.predict(obs, deterministic=True)
-        obs, reward, done, _, meta = env.step(action)
-        robot_speed = env.simulator.robots[0].current_speed
-        ego_speed = env.simulator.ego_ped.current_speed
-        ep_rewards += float(reward)
-        env.render()
-
-        if done:
-            logger.info(extract_info(meta, ep_rewards))
-            logger.info(f"Robot speed {robot_speed}")
-            logger.info(f"Ego speed {ego_speed}")
-            ep_rewards = 0.0
-            obs = env.reset()
+        for _ in range(10000):
+            if isinstance(obs, tuple):
+                obs = obs[0]
+            action, _ = model.predict(obs, deterministic=True)
+            obs, reward, terminated, truncated, meta = env.step(action)
+            done = bool(terminated or truncated)
+            robot_speed = _extract_linear_speed(env.simulator.robots[0].current_speed)
+            ego_speed = _extract_linear_speed(env.simulator.ego_ped.current_speed)
+            ep_rewards += float(reward)
             env.render()
 
-    env.exit()
+            if done:
+                logger.info(extract_info(meta, ep_rewards))
+                logger.info(f"Robot speed {robot_speed}")
+                logger.info(f"Ego speed {ego_speed}")
+                ep_rewards = 0.0
+                obs = env.reset()
+                env.render()
+    finally:
+        env.exit()
 
 
 if __name__ == "__main__":

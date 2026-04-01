@@ -22,8 +22,8 @@ Example:
     >>> for sim in sims:
     ...     sim.step_once([action1, action2])"""
 
-from dataclasses import dataclass, field
-from math import ceil, cos, pi, sin
+from dataclasses import dataclass, field, replace
+from math import atan2, ceil, cos, pi, sin
 from random import sample, uniform
 
 import numpy as np
@@ -41,13 +41,41 @@ from robot_sf.nav.map_config import MapDefinition
 from robot_sf.nav.navigation import RouteNavigator, get_prepared_obstacles, sample_route
 from robot_sf.nav.occupancy import circle_collides_any_lines
 from robot_sf.ped_ego.unicycle_drive import UnicycleAction, UnicycleDrivePedestrian
-from robot_sf.ped_npc.adversial_ped_force import AdversialPedForce, AdversialPedForceConfig
+from robot_sf.ped_npc.adversial_ped_force import (
+    AdversarialPedForce,
+    AdversarialPedForceConfig,
+)
 from robot_sf.ped_npc.ped_behavior import PedestrianBehavior, SinglePedestrianBehavior
 from robot_sf.ped_npc.ped_grouping import PedestrianGroupings, PedestrianStates
 from robot_sf.ped_npc.ped_population import PedSpawnConfig, populate_simulation
 from robot_sf.ped_npc.ped_robot_force import PedRobotForce, PedRobotForceConfig
 from robot_sf.ped_npc.ped_zone import sample_zone
 from robot_sf.robot.robot_state import Robot
+
+PYSF_POSITION_SLICE = slice(0, 2)
+PYSF_VELOCITY_SLICE = slice(2, 4)
+PYSF_TAU_INDEX = 6
+MIN_HEADING_SPEED_MPS = 1e-6
+
+
+def _cartesian_velocity(speed: float, heading: float) -> np.ndarray:
+    """Convert scalar speed plus heading into PySF ``(vx, vy)`` components.
+
+    Returns:
+        np.ndarray: Cartesian velocity vector with shape ``(2,)``.
+    """
+    return np.array([speed * cos(heading), speed * sin(heading)], dtype=float)
+
+
+def _heading_from_velocity(velocity_xy: np.ndarray, fallback_heading: float) -> float:
+    """Derive a heading from a PySF velocity vector or keep the fallback heading.
+
+    Returns:
+        float: Heading angle in radians.
+    """
+    if float(np.linalg.norm(velocity_xy)) <= MIN_HEADING_SPEED_MPS:
+        return fallback_heading
+    return float(atan2(float(velocity_xy[1]), float(velocity_xy[0])))
 
 
 def _make_ped_forces(
@@ -56,7 +84,7 @@ def _make_ped_forces(
     robots: list[Robot],
     peds_have_obstacle_forces: bool,
     prf_config: PedRobotForceConfig,
-    apf_config: AdversialPedForceConfig,
+    apf_config: AdversarialPedForceConfig,
 ) -> list[PySFForce]:
     """Configure pedestrian forces for the physics engine.
 
@@ -83,15 +111,17 @@ def _make_ped_forces(
 
     if prf_config.is_active:
         for robot in robots:
-            prf_config.robot_radius = robot.config.radius
+            robot_prf_config = replace(prf_config, robot_radius=robot.config.radius)
             forces.append(
-                PedRobotForce(prf_config, sim.peds, lambda: robot.pos),
+                PedRobotForce(robot_prf_config, sim.peds, lambda robot=robot: robot.pos),
             )
 
     if apf_config.is_active:
         for robot in robots:
-            apf_config.robot_radius = robot.config.radius
-            forces.append(AdversialPedForce(apf_config, sim.peds, lambda: robot.pose))
+            robot_apf_config = replace(apf_config, robot_radius=robot.config.radius)
+            forces.append(
+                AdversarialPedForce(robot_apf_config, sim.peds, lambda robot=robot: robot.pose)
+            )
 
     return forces
 
@@ -241,7 +271,7 @@ class Simulator:
             is_at_final_goal = nav.reached_destination
             if collision or is_at_final_goal:
                 waypoints = sample_route(self.map_def, None if self.random_start_pos else i)
-                nav.new_route(waypoints[1:])
+                nav.new_route(waypoints[1:], start_pos=waypoints[0])
                 robot.reset_state((waypoints[0], nav.initial_orientation))
 
     def step_once(self, actions: list[RobotAction]):
@@ -415,11 +445,14 @@ class PedSimulator(Simulator):
                 self.config.apf_config,
             ),
         )
+        self.pysf_sim.peds.step_width = self.config.time_per_step_in_secs
         self.pysf_sim.peds.max_speed_multiplier = self.config.peds_speed_mult
 
         self.robot_navs = [
             RouteNavigator(proximity_threshold=self.goal_proximity_threshold) for _ in self.robots
         ]
+
+        self.last_ped_forces = np.zeros((0, 2), dtype=float)
 
         self.reset_state()
         for behavior in self.peds_behaviors:
@@ -431,6 +464,11 @@ class PedSimulator(Simulator):
         Returns the current positions of all pedestrians.
         """
         return self.pysf_state.ped_positions[:-1]  # Exclude the ego pedestrian
+
+    @property
+    def ped_vel(self):
+        """Return current velocities for NPC pedestrians only."""
+        return self.pysf_state.ped_velocities[:-1]
 
     @property
     def ego_ped_pos(self) -> Vec2D:
@@ -459,6 +497,13 @@ class PedSimulator(Simulator):
         """
         return self.robots[0].pos
 
+    def _sync_ego_ped_social_force_state(self) -> None:
+        """Synchronize the appended ego-pedestrian row in the PySF state array."""
+        pysf_states = self.pysf_state.pysf_states()
+        ego_speed, ego_heading = self.ego_ped.current_speed
+        pysf_states[-1, PYSF_POSITION_SLICE] = self.ego_ped.pos
+        pysf_states[-1, PYSF_VELOCITY_SLICE] = _cartesian_velocity(ego_speed, ego_heading)
+
     def reset_state(self):
         """Reset robot and ego pedestrian state.
 
@@ -471,7 +516,7 @@ class PedSimulator(Simulator):
             is_at_final_goal = nav.reached_destination
             if collision or is_at_final_goal:
                 waypoints = sample_route(self.map_def, None if self.random_start_pos else i)
-                nav.new_route(waypoints[1:])
+                nav.new_route(waypoints[1:], start_pos=waypoints[0])
                 robot.reset_state((waypoints[0], nav.initial_orientation))
         # Ego_pedestrian reset
         if self.spawn_near_robot:
@@ -480,12 +525,21 @@ class PedSimulator(Simulator):
             self.ego_ped.reset_state((ped_spawn, self.ego_ped.pose[1]))
         else:
             # Spawn ego pedestrian randomly in one of the pedestrian spawn zones
+            if not self.map_def.ped_spawn_zones:
+                raise ValueError(
+                    "spawn_near_robot=False requires at least one pedestrian spawn zone.",
+                )
             ped_spawn_zone = sample(self.map_def.ped_spawn_zones, k=1)[0]
             ped_spawn = sample_zone(ped_spawn_zone, 1)[0]
-            npc_orient = self.pysf_state.pysf_states()[
-                0, 6
-            ]  # Have the same orientation as the first NPC
+            npc_orient = self.ego_ped.pose[1]
+            if self.pysf_state.num_peds > 1:
+                npc_velocity = self.pysf_state.pysf_states()[0, PYSF_VELOCITY_SLICE]
+                npc_orient = _heading_from_velocity(
+                    npc_velocity,
+                    fallback_heading=npc_orient,
+                )
             self.ego_ped.reset_state((ped_spawn, npc_orient))
+        self._sync_ego_ped_social_force_state()
 
     def step_once(self, actions: list[RobotAction], ego_ped_actions: list[UnicycleAction]):
         """Advance simulation with robot and ego pedestrian actions.
@@ -508,9 +562,7 @@ class PedSimulator(Simulator):
             nav.update_position(robot.pos)
 
         self.ego_ped.apply_action(ego_ped_actions[0], self.config.time_per_step_in_secs)
-        # Update state for social force calculation
-        self.pysf_state.pysf_states()[-1, 0:2] = self.ego_ped.pos
-        self.pysf_state.pysf_states()[-1, 2:4] = self.ego_ped.current_speed
+        self._sync_ego_ped_social_force_state()
 
     def get_proximity_point(
         self,
